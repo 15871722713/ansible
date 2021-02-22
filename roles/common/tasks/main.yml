@@ -1,0 +1,54 @@
+- name: Backup sources file
+  command: "cp /etc/apt/sources.list /etc/apt/sources.list_backup"
+  become: true
+
+- name: Create tuna-sources file
+  copy: src=tuna_sources.list dest=/etc/apt/sources.list
+  become: true
+
+- name: Only run "update_cache=yes" if the last one is more than 3600 seconds ago
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  become: true
+
+- name: Install VLAN driver
+  apt:
+    name: vlan
+    state: latest
+
+- name: Load VLAN driver on boot
+  lineinfile:
+    dest: /etc/modules
+    line: '8021q'
+  become: true
+
+- name: Install TFTP server
+  apt:
+    name: tftpd-hpa
+    state: latest
+  become: true
+
+# - name: Make sure remote TFTP client can create files
+#   lineinfile:
+#     dest: /etc/default/tftpd-hpa
+#     regexp: '^TFTP_OPTIONS='
+#     line: 'TFTP_OPTIONS="--secure --create"'
+
+# - name: Ensure TFTP directory is writable
+#   file: dest=/var/lib/tftpboot mode=0777
+
+- name: Python module support packages
+  apt: name=iperf3 state=latest
+  become: true
+
+- name: Copy IPerf service file
+  copy: src=iperf3d.service dest=/etc/systemd/system
+  become: true
+
+- name: Enable IPv4 forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: 1
+    sysctl_set: yes
+  become: true
